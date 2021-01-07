@@ -135,7 +135,7 @@ def Plex(time1, span):
         action = 404
         time.sleep(1)
         action = ActionChains(driver)
-        action.send_keys(Keys.DOWN).send_keys(Keys.RETURN).perform()
+        action.send_keys(Keys.RETURN).perform()
         time.sleep(1)
         info = extract(driver, time1, span)
     except Exception as e:
