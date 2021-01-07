@@ -84,10 +84,10 @@ def extract(driver, time1, span):
 
         locate_by_id(driver, "SubmitLink")
         time.sleep(5)
-        try:
-            get_by_class(driver, "StandardGrid")  # Make sure results are present
-        except:
-            driver.refresh()
+        try:  # Make sure results are present
+            get_by_class(driver, "StandardGrid")
+        except:  # If not, they probably need a built cache. So "refresh" the page
+            locate_by_id(driver, "SubmitLink")
 
         try:
             default = driver.find_elements_by_class_name("DefaultColor")
