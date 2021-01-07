@@ -56,27 +56,63 @@ def standard(date):
 
     return datetime.date(temp_date[2], temp_date[0], temp_date[1])
 
-def extract(driver, time, span):
+def extract(driver, time1, span):
+    results = []  # Will hold all the totals in the range
+
     select_drop(driver, "fltGroupBy", "BuildingInvType")
     # Click to unselect these
     driver.find_element_by_xpath("//input[@value='CConsign']").click()
     driver.find_element_by_xpath("//input[@value='Supplies']").click()
     driver.find_element_by_xpath("//input[@value='NonStd']").click()
-    for index in range(span):
+    # Fill out the time boxes with end of workday
+    box = get_by_id(driver, "fltTime_TME")
+    box.clear()
+    box.send_keys("5:00 PM")
+    box = get_by_id(driver, "fltCostTime_TME")
+    box.clear()
+    box.send_keys("5:00 PM")
+    for index in range(span):  # For each day in the range
+        temp = str(time1.month) + "/" + str(time1.day) + "/" + str(time1.year)
         # For the inventory date
-        inv_box = get_by_id(driver, "fltDate_DTE_RQD")
-        inv_box = get_by_id(driver, "fltTime_TME")
-        inv_box.send_keys("5:00 PM")
+        box = get_by_id(driver, "fltDate_DTE_RQD")
+        box.clear()
+        box.send_keys(temp)
         # For the cost date
-        cost_box = get_by_id(driver, "fltCostDate_DTE_RQD")
-        cost_box = get_by_id(driver, "fltCostTime_TME")
-        cost_box.send_keys("5:00 PM")
+        box = get_by_id(driver, "fltCostDate_DTE_RQD")
+        box.clear()
+        box.send_keys(temp)
 
         locate_by_id(driver, "SubmitLink")
+        time.sleep(5)
+        try:
+            get_by_class(driver, "StandardGrid")  # Make sure results are present
+        except:
+            driver.refresh()
 
-        time += datetime.timedelta(days=1)  # Increment the day
+        try:
+            default = driver.find_elements_by_class_name("DefaultColor")
+            alt = driver.find_elements_by_class_name("AltColor")
+            default = default[-1]
+            alt = alt[-1]
 
-    input("Program Pause")
+            if "Total" in default.text:  # If the last row is default color
+                total = default.text.split()
+            else:  # If the last row is alt color
+                total = alt.text.split()
+
+            total.pop(3)  # Remove "Vendor Managed" column
+            total.pop(0)  # Remove "Building Code" column
+            #for index in range(4):  # For each number in the row
+            #    total[index] = float(total[index].replace(",", "_"))
+            total.insert(0, temp)
+
+            results.append(total)
+        except:
+            pass
+
+        time1 += datetime.timedelta(days=1)  # Increment the day
+
+    return results
 
 def Plex(time1, span):
     try:
@@ -129,14 +165,30 @@ def main():
     if date1 > date2:  # If date1 is more recent
         days = (date1 - date2).days + 1
         date = date2
+        later_date = date1
     elif date1 < date2:  # If date2 is more recent
         days = (date2 - date1).days + 1
         date = date1
+        later_date = date2
     else:  # Both dates are the same
         days = 1
         date = date1
+        later_date = date1
     # The "extra" 1 in days is because the first day is included
 
-    data = Plex(date, days)
+    data = Plex(date, days)  # Get the data
+    wb_obj = openpyxl.Workbook()
+    sheet_obj = wb_obj.active
+    headers = ["Date", "Finished Goods", "Raw Material", "WIP", "Total"]
+    for num, head in enumerate(headers):  # Put in the headers
+        sheet_obj.cell(row=1, column=num+1).value = head
+    for num, day in enumerate(data):  # Put in the data
+        sheet_obj.cell(row=num+2, column=1).value = day[0]
+        sheet_obj.cell(row=num+2, column=2).value = day[1]
+        sheet_obj.cell(row=num+2, column=3).value = day[2]
+        sheet_obj.cell(row=num+2, column=4).value = day[3]
+        sheet_obj.cell(row=num+2, column=5).value = day[4]
+    title = "Inventory Valuation(" + str(date) + "_to_" + str(later_date) + ").xlsx"
+    wb_obj.save(title)
 
 main()
