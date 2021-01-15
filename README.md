@@ -6,8 +6,8 @@ Versions of python and installed modules:
 - selenium 3.141.0
 - ChromeDriver 80.0.3987.106
 - Visual Studio 16.8.4
-- numpy 1.19.3 (the 1.19.4 update messes with selenium)
-- openpyxl 3.0.5
+- numpy 1.19.5
+- openpyxl 3.0.6
 
 Requirements:
 - Wanco Plex account with access to the Inventory Valuation page
